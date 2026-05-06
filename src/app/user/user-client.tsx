@@ -152,11 +152,11 @@ export function UserClient() {
             <span className="text-sm font-medium text-slate-700">Penumpang</span>
           </div>
           <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="rounded-full text-slate-600">
+            <DialogTrigger render={
+              <Button variant="outline" size="sm" className="rounded-full text-slate-600" />
+            }>
                 <LogOut className="h-4 w-4 mr-2" />
                 Keluar
-              </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>

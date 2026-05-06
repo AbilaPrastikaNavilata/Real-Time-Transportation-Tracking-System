@@ -118,11 +118,11 @@ export function TransportationClient({ initialData }: { initialData: any[] }) {
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAdd} className="rounded-full bg-[#0F172A] hover:bg-[#1e293b] text-white font-medium shadow-sm px-6">
+          <DialogTrigger render={
+            <Button onClick={openAdd} className="rounded-full bg-[#0F172A] hover:bg-[#1e293b] text-white font-medium shadow-sm px-6" />
+          }>
               <Plus className="mr-2 h-4 w-4" />
               Add Transport
-            </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSubmit}>

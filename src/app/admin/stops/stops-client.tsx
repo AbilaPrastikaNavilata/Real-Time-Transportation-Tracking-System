@@ -140,11 +140,11 @@ export function StopsClient({ initialData }: { initialData: any[] }) {
         </div>
         <div className="flex items-center gap-3">
           <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="rounded-full border-slate-200 text-[#0F172A] font-medium shadow-sm hover:bg-slate-50">
+            <DialogTrigger render={
+              <Button variant="outline" className="rounded-full border-slate-200 text-[#0F172A] font-medium shadow-sm hover:bg-slate-50" />
+            }>
                 <MapIcon className="mr-2 h-4 w-4 text-slate-500" />
                 View Map
-              </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[700px]">
               <DialogHeader>
@@ -160,11 +160,11 @@ export function StopsClient({ initialData }: { initialData: any[] }) {
           </Dialog>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openAdd} className="rounded-full bg-[#0F172A] hover:bg-[#1e293b] text-white font-medium shadow-sm px-6">
+            <DialogTrigger render={
+              <Button onClick={openAdd} className="rounded-full bg-[#0F172A] hover:bg-[#1e293b] text-white font-medium shadow-sm px-6" />
+            }>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Stop
-              </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <form onSubmit={handleSubmit}>
