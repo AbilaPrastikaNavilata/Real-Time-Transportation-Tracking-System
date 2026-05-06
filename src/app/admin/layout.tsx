@@ -149,15 +149,15 @@ export default function AdminLayout({
                 )}
               </div>
               <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
-                <DialogTrigger asChild>
+                <DialogTrigger render={
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     className="text-red-500 hover:text-red-700 hover:bg-red-50 ml-1 rounded-full"
                     title="Logout"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </Button>
+                  />
+                }>
+                  <LogOut className="h-5 w-5" />
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
