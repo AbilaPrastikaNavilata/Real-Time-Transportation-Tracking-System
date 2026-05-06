@@ -14,10 +14,10 @@ export async function resetUserPassword(userId: string, newPassword: string) {
     // Mencoba menggunakan plugin admin dari better-auth
     const headersList = await headers();
     
-    // Asumsi: betterAuth expose adminSetUserPassword melalui auth.api
+    // Asumsi: betterAuth expose setUserPassword melalui auth.api
     // jika error, kita setidaknya return response error
     try {
-        await auth.api.adminSetUserPassword({
+        await auth.api.setUserPassword({
             headers: headersList,
             body: {
                 userId,

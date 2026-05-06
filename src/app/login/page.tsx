@@ -158,10 +158,8 @@ export default function LoginPage() {
                   </label>
                 </div>
                 <Dialog>
-                  <DialogTrigger asChild>
-                    <button type="button" className="text-sm font-semibold text-[#0053db] hover:underline">
+                  <DialogTrigger className="text-sm font-semibold text-[#0053db] hover:underline">
                       Lupa password?
-                    </button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-md">
                     <DialogHeader>

@@ -74,7 +74,6 @@ export function AdminSidebar() {
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton 
-                      asChild 
                       isActive={isActive}
                       className={`h-11 px-3 rounded-xl transition-all duration-200 ${
                         isActive 
