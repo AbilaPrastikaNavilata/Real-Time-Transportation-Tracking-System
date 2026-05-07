@@ -22,7 +22,9 @@ import {
   Trash2,
   ArrowRightLeft,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  MinusCircle,
+  PlusCircle
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -58,8 +60,25 @@ export function RoutesClient({
     originStopId: "", 
     destinationStopId: "" 
   })
+  const [intermediateStops, setIntermediateStops] = useState<string[]>([])
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: number | null; name: string }>({ open: false, id: null, name: "" })
   const router = useRouter()
+
+  const addIntermediateStop = () => {
+    setIntermediateStops([...intermediateStops, ""])
+  }
+
+  const removeIntermediateStop = (index: number) => {
+    const newStops = [...intermediateStops]
+    newStops.splice(index, 1)
+    setIntermediateStops(newStops)
+  }
+
+  const handleIntermediateStopChange = (index: number, value: string) => {
+    const newStops = [...intermediateStops]
+    newStops[index] = value
+    setIntermediateStops(newStops)
+  }
 
   const filteredData = initialRoutes.filter(item => 
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -78,6 +97,7 @@ export function RoutesClient({
   const openAdd = () => {
     setEditingId(null)
     setFormData({ name: "", transportationId: "", originStopId: "", destinationStopId: "" })
+    setIntermediateStops([])
     setIsDialogOpen(true)
   }
 
@@ -89,6 +109,8 @@ export function RoutesClient({
       originStopId: item.originStopId ? item.originStopId.toString() : "",
       destinationStopId: item.destinationStopId ? item.destinationStopId.toString() : ""
     })
+    const sortedStops = item.routeStops ? [...item.routeStops].sort((a: any, b: any) => a.stopOrder - b.stopOrder) : []
+    setIntermediateStops(sortedStops.map((rs: any) => rs.stopId.toString()))
     setIsDialogOpen(true)
   }
 
@@ -204,7 +226,55 @@ export function RoutesClient({
                     </select>
                   </div>
                 </div>
+
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold text-slate-700">Intermediate Stops (Optional)</Label>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={addIntermediateStop}
+                      className="h-7 text-xs flex items-center gap-1"
+                    >
+                      <PlusCircle className="h-3 w-3" /> Add Stop
+                    </Button>
+                  </div>
+                  
+                  {intermediateStops.map((stopId, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <div className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-xs font-medium text-slate-500 shrink-0">
+                        {index + 1}
+                      </div>
+                      <select 
+                        value={stopId}
+                        onChange={(e) => handleIntermediateStopChange(index, e.target.value)}
+                        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        required
+                      >
+                        <option value="" disabled>Select Stop</option>
+                        {stops.map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => removeIntermediateStop(index)}
+                        className="h-9 w-9 shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <MinusCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {intermediateStops.length > 0 && (
+                     <p className="text-xs text-slate-500 italic mt-1">Stops will be visited in the order listed above.</p>
+                  )}
+                </div>
+
               </div>
+              <input type="hidden" name="intermediateStops" value={JSON.stringify(intermediateStops.filter(id => id !== ""))} />
               <DialogFooter>
                 <Button type="submit" disabled={isSubmitting} className="bg-[#0F172A] hover:bg-[#1e293b]">
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -274,10 +344,17 @@ export function RoutesClient({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <span className="font-medium text-[#0F172A] truncate max-w-[120px]">{item.originStop?.name || "Unknown"}</span>
-                      <ArrowRightLeft className="h-3 w-3 text-slate-400 shrink-0" />
-                      <span className="font-medium text-[#0F172A] truncate max-w-[120px]">{item.destinationStop?.name || "Unknown"}</span>
+                    <div className="flex flex-col gap-1 text-sm text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-[#0F172A] truncate max-w-[120px]">{item.originStop?.name || "Unknown"}</span>
+                        <ArrowRightLeft className="h-3 w-3 text-slate-400 shrink-0" />
+                        <span className="font-medium text-[#0F172A] truncate max-w-[120px]">{item.destinationStop?.name || "Unknown"}</span>
+                      </div>
+                      {item.routeStops && item.routeStops.length > 0 && (
+                        <div className="text-xs text-slate-500 truncate max-w-[250px]" title={`Via: ${[...item.routeStops].sort((a: any, b: any) => a.stopOrder - b.stopOrder).map((rs: any) => rs.stop?.name).join(', ')}`}>
+                          Via: {[...item.routeStops].sort((a: any, b: any) => a.stopOrder - b.stopOrder).map((rs: any) => rs.stop?.name).join(', ')}
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">

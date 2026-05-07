@@ -22,49 +22,84 @@ export async function searchRoutes(from: string, to: string) {
     const fromStopIds = fromStops.map(s => s.id);
     const toStopIds = toStops.map(s => s.id);
 
-    // Helper to enrich routes with relations
-    const enrichRoutes = async (routeRows: typeof routes.$inferSelect[]) => {
-      return await Promise.all(routeRows.map(async (route) => {
-        const [transportation] = route.transportationId
-          ? await db.select().from(transportations).where(eq(transportations.id, route.transportationId))
-          : [null];
-        const [originStop] = route.originStopId
-          ? await db.select().from(stops).where(eq(stops.id, route.originStopId))
-          : [null];
-        const [destinationStop] = route.destinationStopId
-          ? await db.select().from(stops).where(eq(stops.id, route.destinationStopId))
-          : [null];
-        const routeFares = await db.select().from(fares).where(eq(fares.routeId, route.id));
-        const routeSchedules = await db.select().from(schedules).where(eq(schedules.routeId, route.id));
-        return { ...route, transportation, originStop, destinationStop, fares: routeFares, schedules: routeSchedules };
-      }));
-    };
+    // Fetch all routes with relations
+    const allRoutes = await db.query.routes.findMany({
+      with: {
+        transportation: true,
+        originStop: true,
+        destinationStop: true,
+        routeStops: {
+          with: { stop: true }
+        },
+        fares: true,
+        schedules: true
+      }
+    });
 
-    // Find direct routes
-    const directRouteRows = await db.select().from(routes).where(
-      and(
-        isNotNull(routes.originStopId),
-        isNotNull(routes.destinationStopId),
-        inArray(routes.originStopId, fromStopIds),
-        inArray(routes.destinationStopId, toStopIds)
-      )
-    );
+    const directRoutes = [];
+    const fallbackRoutes = [];
 
-    if (directRouteRows.length > 0) {
-      const enriched = await enrichRoutes(directRouteRows);
-      return { success: true, data: enriched, message: "Rute ditemukan." };
+    for (const route of allRoutes) {
+      // Build the ordered sequence of stop IDs for this route
+      const sortedIntermediate = route.routeStops ? [...route.routeStops].sort((a, b) => a.stopOrder - b.stopOrder) : [];
+      
+      const fullPathObjects = [];
+      if (route.originStop) fullPathObjects.push(route.originStop);
+      sortedIntermediate.forEach(rs => {
+        if (rs.stop) fullPathObjects.push(rs.stop);
+      });
+      if (route.destinationStop) fullPathObjects.push(route.destinationStop);
+
+      const routeSequence = fullPathObjects.map(s => s.id);
+
+      // Check if any fromStopId comes before any toStopId in the sequence
+      let isDirect = false;
+      let goesToDest = false;
+      let matchedPath: any[] = [];
+
+      for (const fId of fromStopIds) {
+        for (const tId of toStopIds) {
+          const fIndex = routeSequence.indexOf(fId);
+          const tIndex = routeSequence.lastIndexOf(tId);
+          
+          if (fIndex !== -1 && tIndex !== -1) {
+            isDirect = true;
+            const start = Math.min(fIndex, tIndex);
+            const end = Math.max(fIndex, tIndex);
+            matchedPath = fullPathObjects.slice(start, end + 1);
+          }
+          if (tIndex !== -1) {
+            goesToDest = true;
+            if (!isDirect && matchedPath.length === 0) {
+              matchedPath = fullPathObjects.slice(0, tIndex + 1);
+            }
+          }
+        }
+      }
+
+      if (isDirect) {
+        directRoutes.push({ ...route, matchedPath });
+      } else if (goesToDest) {
+        fallbackRoutes.push({ ...route, matchedPath });
+      }
     }
 
-    // Fallback: routes that go to destination
-    const fallbackRows = await db.select().from(routes)
-      .where(and(isNotNull(routes.destinationStopId), inArray(routes.destinationStopId, toStopIds)))
-      .limit(5);
+    if (directRoutes.length > 0) {
+      return { success: true, data: directRoutes, message: "Rute ditemukan." };
+    }
 
-    const enriched = await enrichRoutes(fallbackRows);
+    if (fallbackRoutes.length > 0) {
+      return {
+        success: true,
+        data: fallbackRoutes.slice(0, 5),
+        message: "Tidak ada rute langsung. Menampilkan alternatif rute menuju tujuan Anda."
+      };
+    }
+
     return {
       success: true,
-      data: enriched,
-      message: "Tidak ada rute langsung. Menampilkan alternatif rute menuju tujuan Anda."
+      data: [],
+      message: "Tidak Ada Rute Ditemukan"
     };
 
   } catch (error: any) {

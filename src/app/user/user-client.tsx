@@ -119,10 +119,8 @@ export function UserClient() {
         
         // Update map stops
         if (dataWithTime.length > 0) {
-          const stopsForMap = [];
-          if (dataWithTime[0].originStop) stopsForMap.push(dataWithTime[0].originStop);
-          if (dataWithTime[0].destinationStop) stopsForMap.push(dataWithTime[0].destinationStop);
-          setMapStops(stopsForMap);
+          const topRoute = dataWithTime[0];
+          setMapStops(topRoute.matchedPath || []);
         } else {
           setMapStops([]);
         }

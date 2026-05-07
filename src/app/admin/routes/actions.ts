@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/db"
-import { routes, transportations, stops } from "@/db/schema"
+import { routes, transportations, stops, routeStops } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
@@ -12,7 +12,10 @@ export async function getRoutesData() {
       with: {
         transportation: true,
         originStop: true,
-        destinationStop: true
+        destinationStop: true,
+        routeStops: {
+          with: { stop: true }
+        }
       },
       orderBy: (routes, { desc }) => [desc(routes.id)]
     })
@@ -48,12 +51,32 @@ export async function createRoute(formData: FormData) {
     const originStopId = parseInt(originStopIdStr)
     const destinationStopId = parseInt(destinationStopIdStr)
 
-    await db.insert(routes).values({
+    const intermediateStopsStr = formData.get("intermediateStops") as string
+    let intermediateStopIds: number[] = []
+    if (intermediateStopsStr) {
+      try {
+        intermediateStopIds = JSON.parse(intermediateStopsStr)
+      } catch (e) {}
+    }
+
+    const [result] = await db.insert(routes).values({
       name,
       transportationId,
       originStopId,
       destinationStopId
     })
+
+    const routeId = result.insertId
+    
+    if (intermediateStopIds.length > 0) {
+      await db.insert(routeStops).values(
+        intermediateStopIds.map((stopId, index) => ({
+          routeId,
+          stopId,
+          stopOrder: index + 1
+        }))
+      )
+    }
 
     revalidatePath("/admin/routes")
     return { success: true }
@@ -78,12 +101,32 @@ export async function updateRoute(id: number, formData: FormData) {
     const originStopId = parseInt(originStopIdStr)
     const destinationStopId = parseInt(destinationStopIdStr)
 
+    const intermediateStopsStr = formData.get("intermediateStops") as string
+    let intermediateStopIds: number[] = []
+    if (intermediateStopsStr) {
+      try {
+        intermediateStopIds = JSON.parse(intermediateStopsStr)
+      } catch (e) {}
+    }
+
     await db.update(routes).set({
       name,
       transportationId,
       originStopId,
       destinationStopId
     }).where(eq(routes.id, id))
+
+    await db.delete(routeStops).where(eq(routeStops.routeId, id))
+    
+    if (intermediateStopIds.length > 0) {
+      await db.insert(routeStops).values(
+        intermediateStopIds.map((stopId, index) => ({
+          routeId: id,
+          stopId,
+          stopOrder: index + 1
+        }))
+      )
+    }
 
     revalidatePath("/admin/routes")
     return { success: true }

@@ -134,7 +134,8 @@ export const routesRelations = relations(routes, ({ one, many }) => ({
         references: [stops.id]
     }),
     routeStops: many(routeStops),
-    schedules: many(schedules)
+    schedules: many(schedules),
+    fares: many(fares)
 }));
 
 export const routeStopsRelations = relations(routeStops, ({ one }) => ({
